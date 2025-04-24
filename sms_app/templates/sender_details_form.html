@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header">
+                <h2>{{ title }}</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.user.id_for_label }}" class="form-label">{{ form.user.label }}</label>
+                        {{ form.user }}
+                        {% if form.user.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.user.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.sender_id.id_for_label }}" class="form-label">Sender ID</label>
+                        {{ form.sender_id }}
+                        {% if form.sender_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.sender_id.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.webhook_url.id_for_label }}" class="form-label">Webhook URL</label>
+                        {{ form.webhook_url }}
+                        {% if form.webhook_url.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.webhook_url.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.optional_value_one.id_for_label }}" class="form-label">Optional Value 1</label>
+                        {{ form.optional_value_one }}
+                        {% if form.optional_value_one.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.optional_value_one.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.optional_value_two.id_for_label }}" class="form-label">Optional Value 2</label>
+                        {{ form.optional_value_two }}
+                        {% if form.optional_value_two.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.optional_value_two.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.optional_value_three.id_for_label }}" class="form-label">Optional Value 3</label>
+                        {{ form.optional_value_three }}
+                        {% if form.optional_value_three.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.optional_value_three.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'sender_details_list' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">{{ button_text }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

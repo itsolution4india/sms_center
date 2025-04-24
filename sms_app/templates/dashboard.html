@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - SMS System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .img_tag {
+        width: 200px;
+        height: 200px;
+        margin: auto;
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="d-flex" style="gap: 5px;">
+    <div class="col-lg-4 col-md-6 mt-4 mb-4">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="card-title">Raise Ticket</h6>
+            <p class="text-sm ">Submit issue for support assistance.</p>
+            <div class="pe-2">
+              <div class="chart">
+                <img class="img_tag" style="display: block; margin: auto;" src="{% static 'images/dashboard/support.webp' %}" alt="">
+              </div>
+            </div>
+            <hr class="dark horizontal">
+            <div class="d-flex ">
+              
+                <div class="col-lg-3 col-sm-6 col-12 mt-sm-0 mt-2 w-100">
+                    <a href="/start-campaign">
+                        <button class="btn bg-gradient-info w-100 mb-0 toast-btn text-white" type="button" data-target="infoToast">Raise Ticket</button>
+                    </a>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-lg-4 col-md-6 mt-4 mb-4">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="card-title">Check Reports</h6>
+            <p class="text-sm ">Last Campaign Performance</p>
+            <div class="pe-2">
+              <div class="chart">
+                <img class="img_tag" style="display: block; margin: auto;" src="{% static 'images/dashboard/reports.webp' %}" alt="">
+              </div>
+            </div>
+            <hr class="dark horizontal">
+            <div class="d-flex ">
+              
+                <div class="col-lg-3 col-sm-6 col-12 mt-sm-0 mt-2 w-100">
+                    <a href="/reports">
+                        <button class="btn bg-gradient-info w-100 mb-0 toast-btn text-white" type="button" data-target="infoToast">Check Reports</button>
+                    </a>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-lg-4 col-md-6 mt-4 mb-4">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="card-title">Billing</h6>
+            <p class="text-sm ">Manage and track your payments easily.</p>
+            <div class="pe-2">
+              <div class="chart">
+                <img class="img_tag" style="display: block; margin: auto;" src="{% static 'images/dashboard/billing.webp' %}" alt="">
+              </div>
+            </div>
+            <hr class="dark horizontal">
+            <div class="d-flex ">
+              
+              <div class="col-lg-3 col-sm-6 col-12 mt-sm-0 mt-2 w-100">
+                <a href="/billing">
+                    <button class="btn bg-gradient-info w-100 mb-0 toast-btn text-white" type="button" data-target="infoToast">Check Transactions</button>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</div>
+
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var dashboardLink = document.getElementById('Dashboard');
+    if (dashboardLink) {
+      dashboardLink.classList.add('active');
+    }
+  });
+</script>
+{% endblock %}
+
+{% endblock %}
