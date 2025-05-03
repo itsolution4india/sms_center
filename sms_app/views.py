@@ -8,7 +8,9 @@ from .models import CustomUser, SenderDetails
 from .utils import logger
 from .forms import SenderDetailsForm
 from django.http import JsonResponse
-
+from django.core.paginator import Paginator
+import requests
+from requests.auth import HTTPBasicAuth
 
 def admin_check(user):
     return user.is_superuser
@@ -150,3 +152,36 @@ def get_webhook(request, sender_id):
         return JsonResponse({"webhook_url": webhook.webhook_url})
     except SenderDetails.DoesNotExist:
         return JsonResponse({"webhook_url": None}, status=404)
+    
+FASTAPI_LOGS_URL = "https://smscapi.wtsmessage.xyz/logs"
+USERNAME = "admin"
+PASSWORD = "supersecret"
+
+def view_logs(request):
+    try:
+        # You can pass lines as query param (e.g., ?lines=300)
+        lines_to_fetch = request.GET.get('lines', 300)
+        response = requests.get(
+            FASTAPI_LOGS_URL,
+            params={"lines": lines_to_fetch},
+            auth=HTTPBasicAuth(USERNAME, PASSWORD),
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            log_lines = response.json().get("log_lines", [])
+            log_lines.reverse()  # Show latest logs first
+        else:
+            messages.error(request, "Failed to fetch logs.")
+            log_lines = []
+
+    except Exception as e:
+        messages.error(request, f"Error: {str(e)}")
+        log_lines = []
+
+    # Paginate
+    paginator = Paginator(log_lines, 20)  # 20 logs per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "view_logs.html", {"page_obj": page_obj})

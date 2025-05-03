@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}API logs{% endblock %}
+
+{% block extra_css %}
+    <style>
+        body { font-family: monospace; background: #111; color: #0f0; padding: 20px; }
+        .log-line { border-bottom: 1px dashed #0f0; padding: 5px 0; }
+        .pagination { margin-top: 20px; }
+        .pagination span, .pagination a {
+            color: #fff; margin: 0 5px; text-decoration: none;
+        }
+        .pagination .current { font-weight: bold; color: yellow; }
+        .navbar {
+            display: none !important;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+<div class="mt-3">
+    <h2>📄 FastAPI Logs</h2>
+
+    {% for line in page_obj %}
+        <div class="log-line">{{ line }}</div>
+    {% empty %}
+        <p>No logs available.</p>
+    {% endfor %}
+
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">⬅ Prev</a>
+        {% endif %}
+
+        <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">Next ➡</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
