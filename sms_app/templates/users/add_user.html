@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Add New Jasmin User</h2>
+<form method="post">
+  {% csrf_token %}
+
+  <!-- Basic Fields -->
+  <div class="mb-3">
+    <label>User ID</label>
+    <input type="text" name="uid" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label>Username</label>
+    <input type="text" name="username" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label>Password</label>
+    <input type="text" name="password" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label>Group ID</label>
+    <input type="text" name="gid" class="form-control" required>
+  </div>
+
+  <h4 class="mt-4">Authorization Fields</h4>
+  {% for field in auth_fields %}
+    <div class="mb-3">
+      <label>{{ field }}</label>
+      <input type="text" name="mt_messaging_cred authorization {{ field }}" class="form-control" placeholder="True/False">
+    </div>
+  {% endfor %}
+
+  <h4 class="mt-4">Value Filters</h4>
+  {% for field in valuefilters %}
+    <div class="mb-3">
+      <label>{{ field }}</label>
+      <input type="text" name="mt_messaging_cred valuefilter {{ field }}" class="form-control">
+    </div>
+  {% endfor %}
+
+  <div class="mb-3">
+    <label>defaultvalue src_addr</label>
+    <input type="text" name="mt_messaging_cred defaultvalue src_addr" class="form-control">
+  </div>
+
+  <h4 class="mt-4">Quotas</h4>
+  {% for field in quotas %}
+    <div class="mb-3">
+      <label>{{ field }}</label>
+      <input type="text" name="mt_messaging_cred quota {{ field }}" class="form-control">
+    </div>
+  {% endfor %}
+
+  <h4 class="mt-4">SMPPS Credentials</h4>
+  <div class="mb-3">
+    <label>smpps_cred authorization bind</label>
+    <input type="text" name="smpps_cred authorization bind" class="form-control" placeholder="True/False">
+  </div>
+  <div class="mb-3">
+    <label>smpps_cred quota max_bindings</label>
+    <input type="text" name="smpps_cred quota max_bindings" class="form-control">
+  </div>
+
+  <button type="submit" class="btn btn-primary mt-3">Add User</button>
+</form>
+{% endblock %}

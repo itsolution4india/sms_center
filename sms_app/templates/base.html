@@ -18,6 +18,11 @@
     <!-- endinject -->
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" />
     {% block extra_css %}{% endblock %}
+    <style>
+      .submenu {
+        top: 55px !important;
+      }
+    </style>
   </head>
   <body>
     <div class="container-scroller">
@@ -212,53 +217,60 @@
         <div class="container">
             <ul class="nav page-navigation">
               <li class="nav-item">
-                <a class="nav-link pe-2 ps-2" style="display: flex !important;" href="index.html">
-                  <i class="mdi mdi-file-document-box menu-icon m-0 me-2"></i>
+                <a class="nav-link pe-2 ps-2" style="display: flex !important;" href="/dashboard">
+                  <i class="mdi mdi-chart-histogram menu-icon m-0 me-2"></i>
                   <span class="menu-title mb-1">Dashboard</span>
                 </a>
               </li>
               <li class="nav-item">
                   <a href="#" style="display: flex !important;" class="nav-link pe-2 ps-2">
-                    <i class="mdi mdi-cube-outline menu-icon m-o me-2 mb-0"></i>
-                    <span class="menu-title mb-1">UI Elements</span>
+                    <i class="mdi mdi-account menu-icon m-o me-2 mb-0"></i>
+                    <span class="menu-title mb-1">Users</span>
                     <i class="menu-arrow"></i>
                   </a>
-                  <div class="submenu">
+                  <div class="submenu m-0">
                       <ul>
-                          <li class="nav-item"><a class="nav-link" href="pages/ui-features/buttons.html">Buttons</a></li>
-                          <li class="nav-item"><a class="nav-link" href="pages/ui-features/typography.html">Typography</a></li>
+                          <li class="nav-item"><a class="nav-link" href="/manage-jasmin-users">Jasmin Users</a></li>
+                          <li class="nav-item"><a class="nav-link" href="/manage-whatsapp-users">WhatsApp Users</a></li>
                       </ul>
                   </div>
               </li>
               <li class="nav-item">
-                  <a href="pages/forms/basic_elements.html" style="display: flex !important;" class="nav-link pe-2 ps-2">
+                <a href="/logs" style="display: flex !important;" class="nav-link pe-2 ps-2">
+                  <i class="mdi mdi-clipboard-text menu-icon m-0 me-2"></i>
+                  <span class="menu-title mb-1">jasmin logs</span>
+                  <i class="menu-arrow"></i>
+                </a>
+            </li>
+              <li class="nav-item">
+                  <a href="/manage-groups" style="display: flex !important;" class="nav-link pe-2 ps-2">
+                    <i class="mdi mdi-account-group menu-icon m-0 me-2"></i>
+                    <span class="menu-title mb-1">Groups</span>
+                    <i class="menu-arrow"></i>
+                  </a>
+              </li>
+              <li class="nav-item">
+                  <a href="/user-analytics" style="display: flex !important;" class="nav-link pe-2 ps-2">
                     <i class="mdi mdi-chart-areaspline menu-icon m-0 me-2"></i>
-                    <span class="menu-title mb-1">Form Elements</span>
+                    <span class="menu-title mb-1">User Analytics</span>
                     <i class="menu-arrow"></i>
                   </a>
               </li>
               <li class="nav-item">
-                  <a href="pages/charts/chartjs.html" style="display: flex !important;" class="nav-link pe-2 ps-2">
-                    <i class="mdi mdi-finance menu-icon m-0 me-2"></i>
-                    <span class="menu-title mb-1">Charts</span>
+                  <a href="/report-analytics" style="display: flex !important;" class="nav-link pe-2 ps-2">
+                    <i class="mdi mdi-chart-bar menu-icon m-0 me-2"></i>
+                    <span class="menu-title mb-1">Report Analytics</span>
                     <i class="menu-arrow"></i>
                   </a>
               </li>
               <li class="nav-item">
-                  <a href="pages/tables/basic-table.html" style="display: flex !important;" class="nav-link pe-2 ps-2">
-                    <i class="mdi mdi-grid menu-icon m-0 me-2"></i>
-                    <span class="menu-title mb-1">Tables</span>
-                    <i class="menu-arrow"></i>
-                  </a>
-              </li>
-              <li class="nav-item">
-                  <a href="pages/icons/mdi.html" style="display: flex !important;" class="nav-link pe-2 ps-2">
-                    <i class="mdi mdi-emoticon menu-icon m-0 me-2"></i>
-                    <span class="menu-title mb-1">Icons</span>
-                    <i class="menu-arrow"></i>
-                  </a>
-              </li>
-              <li class="nav-item">
+                <a href="/support" style="display: flex !important;" class="nav-link pe-2 ps-2">
+                  <i class="mdi mdi-chat menu-icon m-0 me-2"></i>
+                  <span class="menu-title mb-1">Technical Support</span>
+                  <i class="menu-arrow"></i>
+                </a>
+            </li>
+              <!-- <li class="nav-item">
                   <a href="#" class="nav-link pe-2 ps-2" style="display: flex !important;">
                     <i class="mdi mdi-codepen menu-icon m-0 me-2"></i>
                     <span class="menu-title mb-1">Sample Pages</span>
@@ -273,11 +285,11 @@
                           <li class="nav-item"><a class="nav-link" href="pages/samples/lock-screen.html">Lockscreen</a></li>
                       </ul>
                   </div>
-              </li>
+              </li> -->
               <li class="nav-item">
-                  <a href="docs/documentation.html" style="display: flex !important;" class="nav-link pe-2 ps-2">
-                    <i class="mdi mdi-file-document-box-outline menu-icon m-0 me-2"></i>
-                    <span class="menu-title mb-1">Documentation</span></a>
+                  <a href="/balance" style="display: flex !important;" class="nav-link pe-2 ps-2">
+                    <i class="mdi mdi-credit-card menu-icon m-0 me-2"></i>
+                    <span class="menu-title mb-1">Balance</span></a>
               </li>
             </ul>
         </div>

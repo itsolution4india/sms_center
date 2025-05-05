@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Jasmin Users</h2>
+<a href="{% url 'add_user' %}" class="btn btn-success">Add User</a>
+<table class="table table-bordered mt-3">
+  <tr>
+    <th>User ID</th><th>Group</th><th>Username</th><th>Balance</th><th>MT SMS</th><th>Throughput</th><th>Actions</th>
+  </tr>
+  {% for user in users %}
+  <tr>
+    <td>{{ user.uid }}</td>
+    <td>{{ user.gid }}</td>
+    <td>{{ user.username }}</td>
+    <td>{{ user.balance }}</td>
+    <td>{{ user.mt_sms }}</td>
+    <td>{{ user.throughput }}</td>
+    <td>
+      <a href="{% url 'delete_user' user.uid %}" class="btn btn-danger btn-sm" onclick="return confirm('Delete this user?')">Delete</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

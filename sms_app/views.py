@@ -11,6 +11,7 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 import requests
 from requests.auth import HTTPBasicAuth
+from django.views.decorators.csrf import csrf_exempt
 
 def admin_check(user):
     return user.is_superuser
@@ -185,3 +186,295 @@ def view_logs(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, "view_logs.html", {"page_obj": page_obj})
+
+
+import telnetlib
+import re
+import time
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
+JCLI_HOST = "46.202.130.143"
+JCLI_PORT = 8990
+TIMEOUT = 5
+
+def fetch_jasmin_users():
+    try:
+        tn = telnetlib.Telnet(JCLI_HOST, JCLI_PORT, TIMEOUT)
+
+        tn.read_until(b"jcli : ", timeout=TIMEOUT)
+        tn.write(b"user -l\n")
+        output = tn.read_until(b"jcli : ", timeout=TIMEOUT).decode('utf-8')
+        tn.write(b"quit\n")
+
+        lines = output.strip().splitlines()
+        users_data = []
+
+        # Get only lines starting with '#' (header + user data)
+        data_lines = [line[1:].strip() for line in lines if line.startswith('#')]
+
+        if len(data_lines) < 2:
+            print("No user data found")
+            return []
+
+        for line in data_lines[1:]:
+            # First split out uid, gid, username
+            initial_parts = re.split(r'\s{2,}', line, maxsplit=3)
+            if len(initial_parts) < 4:
+                continue
+
+            uid, gid, username, rest = initial_parts
+
+            # Now split the rest into balance, mt_sms, throughput
+            last_parts = re.split(r'\s{2,}', rest)
+            balance = last_parts[0] if len(last_parts) > 0 else "ND"
+            mt_sms = last_parts[1] if len(last_parts) > 1 else "ND"
+            throughput = last_parts[2] if len(last_parts) > 2 else "ND"
+
+            users_data.append({
+                'uid': uid,
+                'gid': gid,
+                'username': username,
+                'balance': balance,
+                'mt_sms': mt_sms,
+                'throughput': throughput,
+            })
+
+        return users_data
+
+    except Exception as e:
+        print(f"Error fetching Jasmin users: {e}")
+        return []
+
+
+def list_users(request):
+    users = fetch_jasmin_users()
+    return render(request, 'users/list_users.html', {'users': users})
+
+
+@csrf_exempt
+def add_user(request):
+    if request.method == 'POST':
+        uid = request.POST.get("uid")
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        gid = request.POST.get("gid")
+
+        tn = telnetlib.Telnet("46.202.130.143", 8990, 5)
+        tn.read_until(b"jcli : ", timeout=5)
+        tn.write(b"user -a\n")
+        time.sleep(1)
+
+        tn.write(f"username {username}\n".encode())
+        tn.write(f"password {password}\n".encode())
+        tn.write(f"gid {gid}\n".encode())
+        tn.write(f"uid {uid}\n".encode())
+
+        # Optional fields
+        for key, value in request.POST.items():
+            if key not in ['uid', 'username', 'password', 'gid'] and value:
+                tn.write(f"{key} {value}\n".encode())
+
+        tn.write(b"ok\n")
+        time.sleep(1)
+        tn.read_very_eager()
+        tn.write(b"quit\n")
+        tn.close()
+
+        return redirect('list_users')
+
+    context = {
+        'auth_fields': [
+            'http_send', 'http_balance', 'http_rate', 'http_bulk',
+            'smpps_send', 'http_long_content', 'dlr_level', 'http_dlr_method',
+            'src_addr', 'priority', 'validity_period', 'schedule_delivery_time', 'hex_content'
+        ],
+        'valuefilters': ['dst_addr', 'src_addr', 'priority', 'validity_period', 'content'],
+        'quotas': ['balance', 'early_percent', 'sms_count', 'http_throughput', 'smpps_throughput'],
+    }
+    return render(request, 'users/add_user.html', context)
+
+
+def delete_user(request, uid):
+    try:
+        tn = telnetlib.Telnet(JCLI_HOST, JCLI_PORT, TIMEOUT)
+        tn.read_until(b"jcli : ")
+        tn.write(f"user -r {uid}\n".encode())
+        time.sleep(0.5)
+        tn.read_very_eager()
+        tn.write(b"quit\n")
+        tn.close()
+        messages.success(request, f"User {uid} deleted.")
+    except Exception as e:
+        messages.error(request, f"Error deleting user: {e}")
+
+    return redirect('list_users')
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import Http404
+
+def fetch_user_details(uid):
+    """Fetch details for a specific Jasmin user"""
+    try:
+        tn = telnetlib.Telnet(JCLI_HOST, JCLI_PORT, TIMEOUT)
+        tn.read_until(b"jcli : ", timeout=TIMEOUT)
+        tn.write(f"user -s {uid}\n".encode())
+        output = tn.read_until(b"jcli : ", timeout=TIMEOUT).decode('utf-8')
+        tn.write(b"quit\n")
+        
+        print(f"Raw output from Jasmin CLI:\n{output}")  # Debug output
+        
+        lines = output.strip().splitlines()
+        
+        # Extract user details
+        user_data = {
+            'uid': uid,
+            'username': '',
+            'gid': '',
+            'mt_messaging_cred': {
+                'authorization': {},
+                'valuefilter': {},
+                'defaultvalue': {},
+                'quota': {}
+            },
+            'smpps_cred': {
+                'authorization': {},
+                'quota': {}
+            }
+        }
+        current_section = None
+        
+        for line in lines:
+            line = line.strip()
+            if not line or line == 'jcli :' or line.startswith('Total'):
+                continue
+                
+            # Special handling for username, uid, gid lines which may not have a colon
+            if line.startswith('username'):
+                parts = line.split(None, 1)
+                if len(parts) > 1:
+                    user_data['username'] = parts[1].strip(':').strip()
+            elif line.startswith('uid'):
+                parts = line.split(None, 1)
+                if len(parts) > 1:
+                    user_data['uid'] = parts[1].strip(':').strip()
+            elif line.startswith('gid'):
+                parts = line.split(None, 1)
+                if len(parts) > 1:
+                    user_data['gid'] = parts[1].strip(':').strip()
+            elif line.startswith('mt_messaging_cred'):
+                current_section = 'mt_messaging_cred'
+            elif line.startswith('smpps_cred'):
+                current_section = 'smpps_cred'
+            elif current_section:
+                parts = line.split(':', 1) if ':' in line else line.split(None, 1)
+                
+                if len(parts) > 1:
+                    key = parts[0].strip()
+                    value = parts[1].strip()
+                    
+                    # Handle nested structures
+                    if ' ' in key:
+                        try:
+                            category, subkey = key.split(' ', 1)
+                            if category not in user_data[current_section]:
+                                user_data[current_section][category] = {}
+                            user_data[current_section][category][subkey] = value
+                        except Exception as e:
+                            print(f"Error parsing nested value '{key}': {e}")
+                    else:
+                        try:
+                            user_data[current_section][key] = value
+                        except Exception as e:
+                            print(f"Error setting value for '{key}': {e}")
+        
+        print(f"Parsed user data: {user_data}")  # Debug output
+        return user_data
+    except Exception as e:
+        print(f"Error fetching user details: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+@csrf_exempt
+def edit_user(request, uid):
+    user_data = fetch_user_details(uid)
+    
+    if not user_data:
+        raise Http404(f"User with UID {uid} not found")
+    
+    if request.method == 'POST':
+        username = request.POST.get("username")
+        password = request.POST.get("password", "")
+        gid = request.POST.get("gid")
+        
+        try:
+            # First delete the existing user
+            tn = telnetlib.Telnet(JCLI_HOST, JCLI_PORT, TIMEOUT)
+            tn.read_until(b"jcli : ", timeout=TIMEOUT)
+            tn.write(f"user -r {uid}\n".encode())
+            response = tn.read_until(b"jcli : ", timeout=TIMEOUT)
+            print(f"Delete user response: {response.decode('utf-8')}")
+            
+            # Then create with updated values
+            tn.write(b"user -a\n")
+            response = tn.read_until(b": ", timeout=TIMEOUT)
+            print(f"Add user response: {response.decode('utf-8')}")
+            tn.write(f"{username}\n".encode())
+            
+            response = tn.read_until(b": ", timeout=TIMEOUT)
+            print(f"After username response: {response.decode('utf-8')}")
+            
+            # Only set password if provided, otherwise provide a placeholder
+            if password:
+                tn.write(f"{password}\n".encode())
+            else:
+                tn.write(f"{username}\n".encode())
+                
+            response = tn.read_until(b": ", timeout=TIMEOUT)
+            print(f"After password response: {response.decode('utf-8')}")
+            tn.write(f"{gid}\n".encode())
+            
+            response = tn.read_until(b": ", timeout=TIMEOUT)
+            print(f"After gid response: {response.decode('utf-8')}")
+            tn.write(f"{uid}\n".encode())
+            
+            # Optional fields
+            response = tn.read_until(b": ", timeout=TIMEOUT)
+            print(f"After uid response: {response.decode('utf-8')}")
+            
+            for key, value in request.POST.items():
+                if key not in ['uid', 'username', 'password', 'gid', 'csrfmiddlewaretoken'] and value:
+                    tn.write(f"{key} {value}\n".encode())
+                    try:
+                        response = tn.read_until(b": ", timeout=1)
+                        print(f"After setting {key} response: {response.decode('utf-8')}")
+                    except Exception as e:
+                        print(f"No prompt after setting {key}: {e}")
+            
+            tn.write(b"ok\n")
+            time.sleep(1)
+            response = tn.read_very_eager()
+            print(f"Final response: {response.decode('utf-8')}")
+            tn.write(b"quit\n")
+            tn.close()
+            
+            messages.success(request, f"User {username} (UID: {uid}) updated successfully")
+            return redirect('list_users')
+            
+        except Exception as e:
+            messages.error(request, f"Error updating user: {e}")
+    
+    # Prepare context for the form
+    context = {
+        'user': user_data,
+        'auth_fields': [
+            'http_send', 'http_balance', 'http_rate', 'http_bulk',
+            'smpps_send', 'http_long_content', 'dlr_level', 'http_dlr_method',
+            'src_addr', 'priority', 'validity_period', 'schedule_delivery_time', 'hex_content'
+        ],
+        'valuefilters': ['dst_addr', 'src_addr', 'priority', 'validity_period', 'content'],
+        'quotas': ['balance', 'early_percent', 'sms_count', 'http_throughput', 'smpps_throughput'],
+    }
+    
+    return render(request, 'users/edit_user.html', context)
