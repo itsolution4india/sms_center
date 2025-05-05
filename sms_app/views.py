@@ -309,3 +309,122 @@ def delete_user(request, uid):
         messages.error(request, f"Error deleting user: {e}")
 
     return redirect('list_users')
+
+# views.py
+import mysql.connector
+from django.shortcuts import render
+from django.http import JsonResponse
+from datetime import datetime, timedelta
+import json
+
+def get_db_connection():
+    """Establish database connection"""
+    try:
+        conn = mysql.connector.connect(
+            host='localhost',
+            port=3306,
+            user='prashanth@itsolution4india.com',
+            password='Solution@97',
+            database='smsc_table'
+        )
+        return conn
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        return None
+
+def user_list(request):
+    """View to display all usernames"""
+    conn = get_db_connection()
+    if not conn:
+        return render(request, 'error.html', {'error': 'Database connection failed'})
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT DISTINCT username FROM smsc_responses WHERE username IS NOT NULL ORDER BY username")
+        users = cursor.fetchall()
+        return render(request, 'user_list.html', {'users': users})
+    except Exception as e:
+        print(f"Error fetching users: {e}")
+        return render(request, 'error.html', {'error': str(e)})
+    finally:
+        if conn:
+            conn.close()
+
+def user_analytics(request, username):
+    """View to display analytics for a specific user"""
+    context = {
+        'username': username,
+        'default_date': datetime.now().strftime('%Y-%m-%d')
+    }
+    return render(request, 'user_analytics.html', context)
+
+def get_analytics_data(request):
+    """API endpoint to fetch analytics data for Chart.js"""
+    username = request.GET.get('username')
+    date_str = request.GET.get('date', datetime.now().strftime('%Y-%m-%d'))
+    
+    try:
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d')
+        next_day = selected_date + timedelta(days=1)
+    except ValueError:
+        selected_date = datetime.now()
+        next_day = selected_date + timedelta(days=1)
+    
+    conn = get_db_connection()
+    if not conn:
+        return JsonResponse({'error': 'Database connection failed'}, status=500)
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Query for status counts
+        status_query = """
+            SELECT status, COUNT(*) as count 
+            FROM smsc_responses 
+            WHERE username = %s AND created_at >= %s AND created_at < %s
+            GROUP BY status
+        """
+        cursor.execute(status_query, (username, selected_date, next_day))
+        status_data = cursor.fetchall()
+        
+        # Query for hourly distribution
+        hourly_query = """
+            SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
+            FROM smsc_responses
+            WHERE username = %s AND created_at >= %s AND created_at < %s
+            GROUP BY EXTRACT(HOUR FROM created_at)
+            ORDER BY hour
+        """
+        cursor.execute(hourly_query, (username, selected_date, next_day))
+        hourly_data = cursor.fetchall()
+        
+        # Query for error distribution (if any)
+        error_query = """
+            SELECT error_code, error_message, COUNT(*) as count
+            FROM smsc_responses
+            WHERE username = %s AND created_at >= %s AND created_at < %s AND error_code IS NOT NULL
+            GROUP BY error_code, error_message
+            ORDER BY count DESC
+            LIMIT 5
+        """
+        cursor.execute(error_query, (username, selected_date, next_day))
+        error_data = cursor.fetchall()
+        
+        # Prepare data for charts
+        result = {
+            'status_labels': [item['status'] for item in status_data],
+            'status_counts': [item['count'] for item in status_data],
+            'hourly_labels': [f"{int(item['hour'])}:00" for item in hourly_data],
+            'hourly_counts': [item['count'] for item in hourly_data],
+            'error_data': error_data,
+            'total_messages': sum([item['count'] for item in hourly_data]),
+            'selected_date': selected_date.strftime('%Y-%m-%d')
+        }
+        
+        return JsonResponse(result)
+    except Exception as e:
+        print(f"Error fetching analytics data: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+    finally:
+        if conn:
+            conn.close()

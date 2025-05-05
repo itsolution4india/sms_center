@@ -13,4 +13,7 @@ urlpatterns = [
     path('manage-jasmin-users/', views.list_users, name='list_users'),
     path('users/add/', views.add_user, name='add_user'),
     path('users/delete/<str:uid>/', views.delete_user, name='delete_user'),
+    path('users/', views.user_list, name='user_list'),
+    path('analytics/<str:username>/', views.user_analytics, name='user_analytics'),
+    path('api/analytics/', views.get_analytics_data, name='get_analytics_data'),
 ]
