@@ -41,6 +41,8 @@
               <th>SenderID</th>
               <th>Balance</th>
               <th>TPS</th>
+              <th>Template Name</th>
+              <th>Phone ID</th>
               <th class="text-center">Actions</th>
             </tr>
           </thead>
@@ -50,16 +52,18 @@
               <td>
                 <div class="d-flex align-items-center">
                   <div class="avatar avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center">
-                    <span class="text-white small">{{ user.username|slice:":1"|upper }}</span>
+                    <span class="text-white small p-2">{{ user.username|slice:":1"|upper }}</span>
                   </div>
                   {{ user.username }}
                 </div>
               </td>
-              <td>{{ user.SenderID }}</td>
+              <td>{{ user.Sender_id }}</td>
               <td>
                 <span class="badge bg-success">{{ user.balance }}</span>
               </td>
               <td>{{ user.tps }}</td>
+              <td>{{ user.template_name }}</td>
+              <td>{{ user.phone_id }}</td>
               <td class="text-center">
                 <div class="btn-group">
                   <a href="{% url 'edit_user' user.username %}" class="btn btn-sm btn-outline-primary">
