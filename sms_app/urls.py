@@ -16,4 +16,8 @@ urlpatterns = [
     path('report-analytics/', views.user_list, name='user_list'),
     path('analytics/<str:username>/', views.user_analytics, name='user_analytics'),
     path('api/analytics/', views.get_analytics_data, name='get_analytics_data'),
+    path('manage-whatsapp-users/', views.list_users, name='list_users'),
+    path('create/', views.create_user, name='create_user'),
+    path('edit/<str:username>/', views.edit_user, name='edit_user'),
+    path('delete/<str:username>/', views.delete_user, name='delete_user'),
 ]

@@ -428,3 +428,102 @@ def get_analytics_data(request):
     finally:
         if conn:
             conn.close()
+            
+import mysql.connector
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+
+DB_CONFIG = {
+    'host': 'localhost',
+    'user': 'prashanth@itsolution4india.com',
+    'password': 'Solution@97',
+    'database': 'smsc_table'
+}
+
+def get_db_connection():
+    return mysql.connector.connect(**DB_CONFIG)
+
+def list_users(request):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM whatsapp_services")
+    users = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return render(request, 'users/list.html', {'users': users})
+
+def create_user(request):
+    if request.method == 'POST':
+        data = (
+            request.POST['SenderID'],
+            request.POST['username'],
+            request.POST['account_id'],
+            request.POST['balance'],
+            request.POST['tps'],
+            request.POST['Service'],
+            request.POST['number'],
+            request.POST['app_name'],
+            request.POST['phone_id'],
+            request.POST['waba_id'],
+            request.POST['token'],
+            request.POST['template_name'],
+            request.POST['language'],
+        )
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO whatsapp_services 
+            (SenderID, username, account_id, balance, tps, Service, number, app_name, phone_id, waba_id, token, template_name, language)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, data)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return redirect('list_users')
+    return render(request, 'users/create.html')
+
+def edit_user(request, username):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM whatsapp_services WHERE username = %s", (username,))
+    user = cursor.fetchone()
+
+    if request.method == 'POST':
+        data = (
+            request.POST['SenderID'],
+            request.POST['account_id'],
+            request.POST['balance'],
+            request.POST['tps'],
+            request.POST['Service'],
+            request.POST['number'],
+            request.POST['app_name'],
+            request.POST['phone_id'],
+            request.POST['waba_id'],
+            request.POST['token'],
+            request.POST['template_name'],
+            request.POST['language'],
+            username,
+        )
+
+        cursor.execute("""
+            UPDATE whatsapp_services SET
+            SenderID=%s, account_id=%s, balance=%s, tps=%s, Service=%s, number=%s,
+            app_name=%s, phone_id=%s, waba_id=%s, token=%s, template_name=%s, language=%s
+            WHERE username=%s
+        """, data)
+        conn.commit()
+        return redirect('list_users')
+
+    cursor.close()
+    conn.close()
+    return render(request, 'users/edit.html', {'user': user})
+
+def delete_user(request, username):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM whatsapp_services WHERE username = %s", (username,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect('list_users')

@@ -1,0 +1,12 @@
+<label>Sender ID: <input type="text" name="SenderID" value="{{ user.SenderID|default:'' }}"></label><br>
+<label>Account ID: <input type="text" name="account_id" value="{{ user.account_id|default:'' }}"></label><br>
+<label>Balance: <input type="number" name="balance" value="{{ user.balance|default:0 }}"></label><br>
+<label>TPS: <input type="number" name="tps" value="{{ user.tps|default:0 }}"></label><br>
+<label>Service: <input type="text" name="Service" value="{{ user.Service|default:'' }}"></label><br>
+<label>Number: <input type="text" name="number" value="{{ user.number|default:'' }}"></label><br>
+<label>App Name: <input type="text" name="app_name" value="{{ user.app_name|default:'' }}"></label><br>
+<label>Phone ID: <input type="text" name="phone_id" value="{{ user.phone_id|default:'' }}"></label><br>
+<label>WABA ID: <input type="text" name="waba_id" value="{{ user.waba_id|default:'' }}"></label><br>
+<label>Token: <textarea name="token">{{ user.token|default:'' }}</textarea></label><br>
+<label>Template Name: <input type="text" name="template_name" value="{{ user.template_name|default:'' }}"></label><br>
+<label>Language: <input type="text" name="language" value="{{ user.language|default:'en' }}"></label><br>

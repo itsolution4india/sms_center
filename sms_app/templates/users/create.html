@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create User{% endblock %}
+
+{% block extra_css %}
+
+{% endblock %}
+{% block content %}
+<h2>Create User</h2>
+<form method="post">
+  {% csrf_token %}
+  {% include 'users/form_fields.html' %}
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
