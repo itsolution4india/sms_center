@@ -474,7 +474,7 @@ def create_user(request):
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO whatsapp_services 
-            (SenderID, username, account_id, balance, tps, Service, number, app_name, phone_id, waba_id, token, template_name, language)
+            (sender_id, username, account_id, balance, tps, Service, number, app_name, phone_id, waba_id, token, template_name, language)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, data)
         conn.commit()
@@ -508,7 +508,7 @@ def edit_user(request, username):
 
         cursor.execute("""
             UPDATE whatsapp_services SET
-            SenderID=%s, account_id=%s, balance=%s, tps=%s, Service=%s, number=%s,
+            sender_id=%s, account_id=%s, balance=%s, tps=%s, Service=%s, number=%s,
             app_name=%s, phone_id=%s, waba_id=%s, token=%s, template_name=%s, language=%s
             WHERE username=%s
         """, data)
