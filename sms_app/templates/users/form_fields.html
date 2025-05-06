@@ -15,6 +15,15 @@
               </div>
               <div class="invalid-feedback">Please provide a valid Sender ID.</div>
             </div>
+
+            <div class="col-md-6">
+                <label for="username" class="form-label">Username</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="fas fa-user"></i></span>
+                  <input type="text" class="form-control" id="username" name="username" value="{{ user.username|default:'' }}" required>
+                </div>
+                <div class="invalid-feedback">Please provide a username.</div>
+            </div>
             
             <div class="col-md-6">
               <label for="accountID" class="form-label">Account ID</label>
