@@ -13,6 +13,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection
+import random
 
 def admin_check(user):
     return user.is_superuser
@@ -444,6 +445,9 @@ DB_CONFIG = {
 def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)
 
+def generate_transaction_id():
+    return f"ITS{random.randint(100000, 999999)}"
+
 def list_users(request):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -533,39 +537,56 @@ def get_all_usernames():
     with connection.cursor() as cursor:
         cursor.execute("SELECT username FROM whatsapp_services")
         return [row[0] for row in cursor.fetchall()]
+    
+def generate_transaction_id():
+    return f"ITS{random.randint(100000, 999999)}"
 
 def credit_debit_coins(request):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch all usernames
+    cursor.execute("SELECT username FROM whatsapp_services")
+    usernames = [row['username'] for row in cursor.fetchall()]
+
     if request.method == 'POST':
         username = request.POST['username']
         coins = int(request.POST['coins'])
-        action_type = request.POST['action_type']  # 'credit' or 'debit'
-        transaction_id = str(uuid.uuid4())
+        action_type = request.POST['action_type']
+        transaction_id = generate_transaction_id()
 
-        # Fetch current balance
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT balance FROM whatsapp_services WHERE username = %s", [username])
-            result = cursor.fetchone()
-            if not result:
-                return HttpResponse("User not found.")
-            current_balance = int(result[0])
+        # Get current balance
+        cursor.execute("SELECT balance FROM whatsapp_services WHERE username = %s", (username,))
+        result = cursor.fetchone()
 
-            if action_type == 'credit':
-                new_balance = current_balance + coins
-                reason = f"{coins} coins have been credited to your account, your current balance is {new_balance}"
-            else:
-                new_balance = current_balance - coins
-                reason = f"{coins} coins have been deducted from your account, your current balance is {new_balance}"
+        if not result:
+            cursor.close()
+            conn.close()
+            return HttpResponse("User not found.")
 
-            # Update user balance
-            cursor.execute("UPDATE whatsapp_services SET balance = %s WHERE username = %s", [new_balance, username])
+        current_balance = int(result['balance'])
 
-            # Insert transaction record
-            cursor.execute("""
-                INSERT INTO coins_history (username, coins, reason, type, transaction_id)
-                VALUES (%s, %s, %s, %s, %s)
-            """, [username, coins, reason, action_type, transaction_id])
+        if action_type == 'credit':
+            new_balance = current_balance + coins
+            reason = f"{coins} coins have been credited to your account, your current balance is {new_balance}"
+        else:
+            new_balance = current_balance - coins
+            reason = f"{coins} coins have been deducted from your account, your current balance is {new_balance}"
 
+        # Update balance
+        cursor.execute("UPDATE whatsapp_services SET balance = %s WHERE username = %s", (new_balance, username))
+
+        # Insert into coins_history
+        cursor.execute("""
+            INSERT INTO coins_history (username, coins, reason, created_at, type, transaction_id)
+            VALUES (%s, %s, %s, NOW(), %s, %s)
+        """, (username, coins, reason, action_type, transaction_id))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
         return redirect('coin_transaction')
 
-    usernames = get_all_usernames()
+    cursor.close()
+    conn.close()
     return render(request, 'users/coin_transaction.html', {'usernames': usernames})
