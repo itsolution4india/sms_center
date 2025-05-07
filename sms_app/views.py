@@ -437,7 +437,7 @@ from django.http import HttpResponse
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'prashanth@itsolution4india.com',
-    'password': 'prashu@1234',
+    'password': 'Solution@97',
     'database': 'smsc_table'
 }
 
