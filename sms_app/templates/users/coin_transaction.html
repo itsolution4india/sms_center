@@ -1,17 +1,24 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block title %}Create User{% endblock %}
-
-{% block extra_css %}
-
-{% endblock %}
-
-{% block content %}
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Credit or Debit Coins</title>
+    <title>Coin Transactions</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+        table, th, td {
+            border: 1px solid #aaa;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        form {
+            margin-bottom: 30px;
+        }
+    </style>
 </head>
 <body>
     <h2>Credit or Debit Coins</h2>
@@ -35,6 +42,33 @@
 
         <button type="submit">Submit</button>
     </form>
+
+    <h3>Recent Coin Transactions</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Coins</th>
+                <th>Type</th>
+                <th>Reason</th>
+                <th>Transaction ID</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in history %}
+                <tr>
+                    <td>{{ tx.username }}</td>
+                    <td>{{ tx.coins }}</td>
+                    <td>{{ tx.type }}</td>
+                    <td>{{ tx.reason }}</td>
+                    <td>{{ tx.transaction_id }}</td>
+                    <td>{{ tx.created_at }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">No transactions found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>
-{% endblock %}

@@ -549,6 +549,10 @@ def credit_debit_coins(request):
     cursor.execute("SELECT username FROM whatsapp_services")
     usernames = [row['username'] for row in cursor.fetchall()]
 
+    # Fetch coin history
+    cursor.execute("SELECT * FROM coins_history ORDER BY created_at DESC LIMIT 50")
+    history = cursor.fetchall()
+
     if request.method == 'POST':
         username = request.POST['username']
         coins = int(request.POST['coins'])
@@ -589,4 +593,4 @@ def credit_debit_coins(request):
 
     cursor.close()
     conn.close()
-    return render(request, 'users/coin_transaction.html', {'usernames': usernames})
+    return render(request, 'users/coin_transaction.html', {'usernames': usernames, 'history': history})
