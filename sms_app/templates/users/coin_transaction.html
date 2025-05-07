@@ -1,74 +1,178 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Coin Transactions</title>
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-        }
-        table, th, td {
-            border: 1px solid #aaa;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-        }
-        form {
-            margin-bottom: 30px;
-        }
-    </style>
-</head>
-<body>
-    <h2>Credit or Debit Coins</h2>
-    <form method="POST">
-        {% csrf_token %}
-        <label>Username:</label>
-        <select name="username" required>
-            {% for uname in usernames %}
-                <option value="{{ uname }}">{{ uname }}</option>
-            {% endfor %}
-        </select><br><br>
+{% extends 'base.html' %}
+{% load static %}
 
-        <label>Coins:</label>
-        <input type="number" name="coins" required><br><br>
+{% block title %}User Management{% endblock %}
 
-        <label>Action:</label>
-        <select name="action_type" required>
-            <option value="credit">Credit</option>
-            <option value="debit">Debit</option>
-        </select><br><br>
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+    .card {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: 0.3s;
+    }
+    .card:hover {
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    .transaction-card {
+        border-left: 4px solid transparent;
+    }
+    .transaction-credit {
+        border-left-color: #198754;
+    }
+    .transaction-debit {
+        border-left-color: #dc3545;
+    }
+    .coin-icon {
+        color: #ffc107;
+    }
+    .bg-light-gray {
+        background-color: #f8f9fa;
+    }
+    .dashboard-header {
+        background: linear-gradient(135deg, #6f42c1 0%, #0d6efd 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
 
-        <button type="submit">Submit</button>
-    </form>
+{% block content %}
+<div class="dashboard-header text-center mt-2">
+    <div class="container">
+        <h1><i class="bi bi-coin coin-icon"></i> Coin Management Dashboard</h1>
+        <p class="lead">Credit or debit coins to users and track transactions</p>
+    </div>
+</div>
 
-    <h3>Recent Coin Transactions</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Coins</th>
-                <th>Type</th>
-                <th>Reason</th>
-                <th>Transaction ID</th>
-                <th>Created At</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tx in history %}
-                <tr>
-                    <td>{{ tx.username }}</td>
-                    <td>{{ tx.coins }}</td>
-                    <td>{{ tx.type }}</td>
-                    <td>{{ tx.reason }}</td>
-                    <td>{{ tx.transaction_id }}</td>
-                    <td>{{ tx.created_at }}</td>
-                </tr>
-            {% empty %}
-                <tr><td colspan="6">No transactions found.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</body>
-</html>
+<div class="container mb-5">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-currency-exchange"></i> New Transaction</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <select class="form-select" id="username" name="username" required>
+                                <option value="" disabled selected>Select a user</option>
+                                {% for uname in usernames %}
+                                    <option value="{{ uname }}">{{ uname }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="coins" class="form-label">Coins Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text coin-icon">
+                                    <i class="bi bi-coin"></i>
+                                </span>
+                                <input type="number" class="form-control" id="coins" name="coins" required min="1">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Action Type</label>
+                            <div class="d-flex">
+                                <div class="form-check form-check-inline flex-fill">
+                                    <input class="form-check-input" type="radio" name="action_type" id="credit" value="credit" checked>
+                                    <label class="form-check-label" for="credit">
+                                        <i class="bi bi-plus-circle text-success"></i> Credit
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline flex-fill">
+                                    <input class="form-check-input" type="radio" name="action_type" id="debit" value="debit">
+                                    <label class="form-check-label" for="debit">
+                                        <i class="bi bi-dash-circle text-danger"></i> Debit
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason (Optional)</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="2" placeholder="Why are you crediting/debiting coins?"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Submit Transaction
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="bi bi-clock-history"></i> Recent Transactions</h4>
+                    <div class="input-group input-group-sm w-50">
+                        <input type="text" class="form-control" id="transactionSearch" placeholder="Search transactions...">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <div class="list-group list-group-flush" id="transactionsList">
+                            {% for tx in history %}
+                            <div class="list-group-item transaction-card {% if tx.type == 'credit' %}transaction-credit{% elif tx.type == 'debit' %}transaction-debit{% endif %}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">
+                                        {% if tx.type == 'credit' %}
+                                        <span class="badge bg-success"><i class="bi bi-plus-circle"></i> Credit</span>
+                                        {% else %}
+                                        <span class="badge bg-danger"><i class="bi bi-dash-circle"></i> Debit</span>
+                                        {% endif %}
+                                        <span class="ms-2">{{ tx.username }}</span>
+                                    </h5>
+                                    <small class="text-muted">{{ tx.created_at }}</small>
+                                </div>
+                                <p class="mb-1">
+                                    <span class="fw-bold"><i class="bi bi-coin coin-icon"></i> {{ tx.coins }}</span>
+                                    {% if tx.reason %}
+                                    <span class="ms-3 text-muted">Reason: {{ tx.reason }}</span>
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">Transaction ID: {{ tx.transaction_id }}</small>
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-center py-5">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="mt-3">No transactions found.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JavaScript Bundle with Popper -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Simple client-side search functionality
+    document.getElementById('transactionSearch').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const transactions = document.querySelectorAll('#transactionsList .list-group-item');
+        
+        transactions.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}
