@@ -20,4 +20,5 @@ urlpatterns = [
     path('create/', views.create_user, name='create_user'),
     path('edit/<str:username>/', views.edit_user, name='edit_user'),
     path('delete/<str:username>/', views.delete_user, name='delete_user'),
+    path('users/coins/', views.credit_debit_coins, name='coin_transaction'),
 ]

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create User{% endblock %}
+
+{% block extra_css %}
+
+{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Credit or Debit Coins</title>
+</head>
+<body>
+    <h2>Credit or Debit Coins</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <label>Username:</label>
+        <select name="username" required>
+            {% for uname in usernames %}
+                <option value="{{ uname }}">{{ uname }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label>Coins:</label>
+        <input type="number" name="coins" required><br><br>
+
+        <label>Action:</label>
+        <select name="action_type" required>
+            <option value="credit">Credit</option>
+            <option value="debit">Debit</option>
+        </select><br><br>
+
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
+{% endblock %}

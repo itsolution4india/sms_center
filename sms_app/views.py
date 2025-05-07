@@ -12,6 +12,7 @@ from django.core.paginator import Paginator
 import requests
 from requests.auth import HTTPBasicAuth
 from django.views.decorators.csrf import csrf_exempt
+from django.db import connection
 
 def admin_check(user):
     return user.is_superuser
@@ -436,7 +437,7 @@ from django.http import HttpResponse
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'prashanth@itsolution4india.com',
-    'password': 'Solution@97',
+    'password': 'prashu@1234',
     'database': 'smsc_table'
 }
 
@@ -527,3 +528,44 @@ def delete_user(request, username):
     cursor.close()
     conn.close()
     return redirect('list_users')
+
+def get_all_usernames():
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT username FROM whatsapp_services")
+        return [row[0] for row in cursor.fetchall()]
+
+def credit_debit_coins(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        coins = int(request.POST['coins'])
+        action_type = request.POST['action_type']  # 'credit' or 'debit'
+        transaction_id = str(uuid.uuid4())
+
+        # Fetch current balance
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT balance FROM whatsapp_services WHERE username = %s", [username])
+            result = cursor.fetchone()
+            if not result:
+                return HttpResponse("User not found.")
+            current_balance = int(result[0])
+
+            if action_type == 'credit':
+                new_balance = current_balance + coins
+                reason = f"{coins} coins have been credited to your account, your current balance is {new_balance}"
+            else:
+                new_balance = current_balance - coins
+                reason = f"{coins} coins have been deducted from your account, your current balance is {new_balance}"
+
+            # Update user balance
+            cursor.execute("UPDATE whatsapp_services SET balance = %s WHERE username = %s", [new_balance, username])
+
+            # Insert transaction record
+            cursor.execute("""
+                INSERT INTO coins_history (username, coins, reason, type, transaction_id)
+                VALUES (%s, %s, %s, %s, %s)
+            """, [username, coins, reason, action_type, transaction_id])
+
+        return redirect('coin_transaction')
+
+    usernames = get_all_usernames()
+    return render(request, 'users/coin_transaction.html', {'usernames': usernames})
