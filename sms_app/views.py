@@ -249,7 +249,7 @@ def fetch_jasmin_users():
         return []
 
 
-def list_users(request):
+def list_jasmin_users(request):
     users = fetch_jasmin_users()
     return render(request, 'users/list_users.html', {'users': users})
 
@@ -297,7 +297,7 @@ def add_user(request):
     return render(request, 'users/add_user.html', context)
 
 
-def delete_user(request, uid):
+def delete_jasmin_user(request, uid):
     try:
         tn = telnetlib.Telnet(JCLI_HOST, JCLI_PORT, TIMEOUT)
         tn.read_until(b"jcli : ")
