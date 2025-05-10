@@ -27,6 +27,23 @@
                         <h5 class="card-title">Summary</h5>
                         <p>Total Messages: <strong id="totalMessages">0</strong></p>
                         <p>Date: <strong id="displayDate">{{ default_date }}</strong></p>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="alert alert-success">
+                                    Sent: <strong id="sentCount">0</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="alert alert-warning">
+                                    Pending: <strong id="pendingCount">0</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="alert alert-danger">
+                                    Failed: <strong id="failedCount">0</strong>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -45,8 +62,36 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-body">
+                        <h5 class="card-title">DLR Status Distribution</h5>
+                        <canvas id="dlrChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
                         <h5 class="card-title">Hourly Message Volume</h5>
                         <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- DLR Trend Over Time -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">DLR Status Trend</h5>
+                        <div class="btn-group mb-3" role="group">
+                            <button type="button" class="btn btn-outline-primary active" id="dailyTrendBtn">Daily</button>
+                            <button type="button" class="btn btn-outline-primary" id="weeklyTrendBtn">Weekly</button>
+                            <button type="button" class="btn btn-outline-primary" id="monthlyTrendBtn">Monthly</button>
+                        </div>
+                        <canvas id="dlrTrendChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -64,6 +109,7 @@
                                     <tr>
                                         <th>Error Code</th>
                                         <th>Error Message</th>
+                                        <th>DLR Status</th>
                                         <th>Count</th>
                                     </tr>
                                 </thead>
@@ -80,7 +126,8 @@
 
     <script>
         // Global chart variables
-        let statusChart, hourlyChart;
+        let statusChart, hourlyChart, dlrChart, dlrTrendChart;
+        let currentTrendView = "daily";
         
         // Initialize the page
         $(document).ready(function() {
@@ -89,6 +136,18 @@
             // Set up filter button
             $('#applyFilter').click(function() {
                 fetchData();
+            });
+            
+            // Set up trend view buttons
+            $('#dailyTrendBtn, #weeklyTrendBtn, #monthlyTrendBtn').click(function() {
+                $('#dailyTrendBtn, #weeklyTrendBtn, #monthlyTrendBtn').removeClass('active');
+                $(this).addClass('active');
+                
+                if ($(this).attr('id') === 'dailyTrendBtn') currentTrendView = "daily";
+                else if ($(this).attr('id') === 'weeklyTrendBtn') currentTrendView = "weekly";
+                else currentTrendView = "monthly";
+                
+                fetchTrendData();
             });
         });
         
@@ -105,15 +164,38 @@
                 // Update summary
                 $('#totalMessages').text(data.total_messages);
                 $('#displayDate').text(data.selected_date);
+                $('#sentCount').text(data.dlr_counts?.sent || 0);
+                $('#pendingCount').text(data.dlr_counts?.pending || 0);
+                $('#failedCount').text(data.dlr_counts?.failed || 0);
                 
                 // Update charts
                 updateStatusChart(data.status_labels, data.status_counts);
                 updateHourlyChart(data.hourly_labels, data.hourly_counts);
+                updateDlrChart(data.dlr_labels, data.dlr_counts);
                 
                 // Update error table
                 updateErrorTable(data.error_data);
+                
+                // Fetch trend data
+                fetchTrendData();
             }).fail(function() {
                 alert('Failed to fetch data. Please try again.');
+            });
+        }
+        
+        function fetchTrendData() {
+            const username = $('#username').text();
+            const date = $('#dateFilter').val();
+            
+            $.get(`/api/analytics/trend/?username=${username}&date=${date}&view=${currentTrendView}`, function(data) {
+                if (data.error) {
+                    console.error('Error fetching trend data:', data.error);
+                    return;
+                }
+                
+                updateDlrTrendChart(data.labels, data.sent_data, data.pending_data, data.failed_data);
+            }).fail(function() {
+                console.error('Failed to fetch trend data');
             });
         }
         
@@ -138,6 +220,39 @@
                             'rgba(255, 206, 86, 0.7)',
                             'rgba(153, 102, 255, 0.7)',
                             'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateDlrChart(labels, data) {
+            const ctx = document.getElementById('dlrChart').getContext('2d');
+            
+            // Destroy previous chart if exists
+            if (dlrChart) {
+                dlrChart.destroy();
+            }
+            
+            dlrChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Sent', 'Pending', 'Failed'],
+                    datasets: [{
+                        data: [data.sent || 0, data.pending || 0, data.failed || 0],
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.7)',  // green for sent
+                            'rgba(255, 193, 7, 0.7)',  // yellow for pending
+                            'rgba(220, 53, 69, 0.7)'   // red for failed
                         ],
                         borderWidth: 1
                     }]
@@ -194,12 +309,86 @@
             });
         }
         
+        function updateDlrTrendChart(labels, sentData, pendingData, failedData) {
+            const ctx = document.getElementById('dlrTrendChart').getContext('2d');
+            
+            // Destroy previous chart if exists
+            if (dlrTrendChart) {
+                dlrTrendChart.destroy();
+            }
+            
+            dlrTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Sent',
+                            data: sentData,
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Pending',
+                            data: pendingData,
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            borderColor: 'rgba(255, 193, 7, 1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Failed',
+                            data: failedData,
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: `${currentTrendView.charAt(0).toUpperCase() + currentTrendView.slice(1)} DLR Status Trend`
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Message Count'
+                            },
+                            stacked: false
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: currentTrendView === 'daily' ? 'Date' : 
+                                      currentTrendView === 'weekly' ? 'Week' : 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
         function updateErrorTable(errorData) {
             const tbody = $('#errorTable tbody');
             tbody.empty();
             
             if (errorData.length === 0) {
-                tbody.append('<tr><td colspan="3" class="text-center">No errors found</td></tr>');
+                tbody.append('<tr><td colspan="4" class="text-center">No errors found</td></tr>');
                 return;
             }
             
@@ -208,6 +397,9 @@
                     <tr>
                         <td>${error.error_code || 'N/A'}</td>
                         <td>${error.error_message || 'No message'}</td>
+                        <td><span class="badge bg-${error.dlr_status === 'failed' ? 'danger' : 
+                                              error.dlr_status === 'pending' ? 'warning' : 
+                                              'success'}">${error.dlr_status || 'N/A'}</span></td>
                         <td>${error.count}</td>
                     </tr>
                 `);
