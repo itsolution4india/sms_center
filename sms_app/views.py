@@ -389,6 +389,16 @@ def get_analytics_data(request):
         cursor.execute(status_query, (username, selected_date, next_day))
         status_data = cursor.fetchall()
         
+        # Query for dlr_status counts (new)
+        dlr_status_query = """
+            SELECT dlr_status, COUNT(*) as count 
+            FROM smsc_responses 
+            WHERE username = %s AND created_at >= %s AND created_at < %s
+            GROUP BY dlr_status
+        """
+        cursor.execute(dlr_status_query, (username, selected_date, next_day))
+        dlr_status_data = cursor.fetchall()
+        
         # Query for hourly distribution
         hourly_query = """
             SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
@@ -412,12 +422,57 @@ def get_analytics_data(request):
         cursor.execute(error_query, (username, selected_date, next_day))
         error_data = cursor.fetchall()
         
+        # Query for hourly distribution per dlr_status (new)
+        hourly_dlr_query = """
+            SELECT EXTRACT(HOUR FROM created_at) as hour, 
+                   dlr_status,
+                   COUNT(*) as count
+            FROM smsc_responses
+            WHERE username = %s AND created_at >= %s AND created_at < %s
+            GROUP BY EXTRACT(HOUR FROM created_at), dlr_status
+            ORDER BY hour, dlr_status
+        """
+        cursor.execute(hourly_dlr_query, (username, selected_date, next_day))
+        hourly_dlr_data = cursor.fetchall()
+        
+        # Process hourly DLR data to format needed for Chart.js
+        hourly_sent = []
+        hourly_pending = []
+        hourly_failed = []
+        hours = sorted(set([int(item['hour']) for item in hourly_dlr_data]))
+        
+        # Initialize arrays with zeros
+        for _ in range(24):
+            hourly_sent.append(0)
+            hourly_pending.append(0)
+            hourly_failed.append(0)
+        
+        # Fill with actual data
+        for item in hourly_dlr_data:
+            hour = int(item['hour'])
+            status = item['dlr_status']
+            count = item['count']
+            
+            if status == 'sent':
+                hourly_sent[hour] = count
+            elif status == 'pending':
+                hourly_pending[hour] = count
+            elif status == 'failed':
+                hourly_failed[hour] = count
+        
         # Prepare data for charts
         result = {
             'status_labels': [item['status'] for item in status_data],
             'status_counts': [item['count'] for item in status_data],
-            'hourly_labels': [f"{int(item['hour'])}:00" for item in hourly_data],
+            'dlr_status_labels': [item['dlr_status'] if item['dlr_status'] else 'unknown' for item in dlr_status_data],
+            'dlr_status_counts': [item['count'] for item in dlr_status_data],
+            'hourly_labels': [f"{hour}:00" for hour in range(24)],
             'hourly_counts': [item['count'] for item in hourly_data],
+            'hourly_dlr_data': {
+                'sent': hourly_sent,
+                'pending': hourly_pending,
+                'failed': hourly_failed
+            },
             'error_data': error_data,
             'total_messages': sum([item['count'] for item in hourly_data]),
             'selected_date': selected_date.strftime('%Y-%m-%d')
