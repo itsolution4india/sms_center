@@ -690,27 +690,232 @@ def smsc_responses_view(request):
     })
 
 
-def export_to_csv(records):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="smsc_responses.csv"'
-    writer = csv.writer(response)
+# def export_to_csv(records):
+#     response = HttpResponse(content_type='text/csv')
+#     response['Content-Disposition'] = 'attachment; filename="smsc_responses.csv"'
+#     writer = csv.writer(response)
     
-    if records:
-        writer.writerow(records[0].keys())  # headers
-        for row in records:
+#     if records:
+#         writer.writerow(records[0].keys())  # headers
+#         for row in records:
+#             writer.writerow(row.values())
+#     return response
+
+
+# def export_to_excel(records):
+#     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#     response['Content-Disposition'] = 'attachment; filename="smsc_responses.xlsx"'
+
+#     wb = openpyxl.Workbook()
+#     ws = wb.active
+#     if records:
+#         ws.append(list(records[0].keys()))
+#         for row in records:
+#             ws.append(list(row.values()))
+#     wb.save(response)
+#     return response
+
+from urllib.parse import urlencode
+import csv
+import xlwt
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+def smsc_responses_list(request):
+    """View to display SMSC responses with filtering and pagination"""
+    # Get filter parameters from request
+    username = request.GET.get('username', '')
+    source_addr = request.GET.get('source_addr', '')
+    destination_addr = request.GET.get('destination_addr', '')
+    status = request.GET.get('status', '')
+    dlr_status = request.GET.get('dlr_status', '')
+    search = request.GET.get('search', '')
+    error_code = request.GET.get('error_code', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    # Database connection
+    conn = get_db_connection()
+    if not conn:
+        return render(request, 'smsc_responses/list.html', 
+                     {'error': 'Database connection failed'})
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Build the SQL query with filters
+        sql_query = "SELECT * FROM smsc_responses WHERE 1=1"
+        params = []
+        
+        if username:
+            sql_query += " AND username LIKE %s"
+            params.append(f"%{username}%")
+        
+        if source_addr:
+            sql_query += " AND source_addr LIKE %s"
+            params.append(f"%{source_addr}%")
+        
+        if destination_addr:
+            sql_query += " AND destination_addr LIKE %s"
+            params.append(f"%{destination_addr}%")
+        
+        if status:
+            sql_query += " AND status = %s"
+            params.append(status)
+        
+        if dlr_status:
+            sql_query += " AND dlr_status = %s"
+            params.append(dlr_status)
+        
+        if error_code:
+            sql_query += " AND error_code = %s"
+            params.append(int(error_code))
+        
+        if date_from:
+            sql_query += " AND created_at >= %s"
+            params.append(date_from)
+        
+        if date_to:
+            sql_query += " AND created_at <= %s"
+            params.append(date_to)
+        
+        # Global search across multiple fields
+        if search:
+            sql_query += """ AND (
+                username LIKE %s OR
+                source_addr LIKE %s OR
+                destination_addr LIKE %s OR
+                short_message LIKE %s OR
+                message_id LIKE %s OR
+                status LIKE %s OR
+                contact_name LIKE %s OR
+                message_body LIKE %s
+            )"""
+            search_param = f"%{search}%"
+            params.extend([search_param] * 8)  # Add search parameter 8 times for the 8 OR conditions
+        
+        # Add order by
+        sql_query += " ORDER BY created_at DESC"
+        
+        # Get total count for pagination
+        count_query = f"SELECT COUNT(*) as count FROM ({sql_query}) as filtered_data"
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()['count']
+        
+        # Get paginated results
+        page = request.GET.get('page', 1)
+        per_page = 20  # Items per page
+        
+        # Add limit and offset for pagination
+        offset = (int(page) - 1) * per_page
+        sql_query += f" LIMIT {per_page} OFFSET {offset}"
+        
+        # Execute the query with all filters
+        cursor.execute(sql_query, params)
+        results = cursor.fetchall()
+        
+        # Get unique values for filter dropdowns
+        cursor.execute("SELECT DISTINCT username FROM smsc_responses ORDER BY username")
+        usernames = [row['username'] for row in cursor.fetchall() if row['username']]
+        
+        cursor.execute("SELECT DISTINCT status FROM smsc_responses ORDER BY status")
+        statuses = [row['status'] for row in cursor.fetchall() if row['status']]
+        
+        cursor.execute("SELECT DISTINCT dlr_status FROM smsc_responses ORDER BY dlr_status")
+        dlr_statuses = [row['dlr_status'] for row in cursor.fetchall() if row['dlr_status']]
+        
+        cursor.execute("SELECT DISTINCT error_code FROM smsc_responses WHERE error_code IS NOT NULL ORDER BY error_code")
+        error_codes = [row['error_code'] for row in cursor.fetchall()]
+        
+        # Create paginator
+        paginator = Paginator(range(total_count), per_page)
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+        
+        # Save current GET parameters for pagination links
+        get_params = request.GET.copy()
+        if 'page' in get_params:
+            del get_params['page']
+        query_string = urlencode(get_params)
+        
+        # Prepare context for template
+        context = {
+            'results': results,
+            'page_obj': page_obj,
+            'total_count': total_count,
+            'usernames': usernames,
+            'statuses': statuses,
+            'dlr_statuses': dlr_statuses,
+            'error_codes': error_codes,
+            'filters': {
+                'username': username,
+                'source_addr': source_addr,
+                'destination_addr': destination_addr,
+                'status': status,
+                'dlr_status': dlr_status,
+                'search': search,
+                'error_code': error_code,
+                'date_from': date_from,
+                'date_to': date_to,
+            },
+            'query_string': query_string
+        }
+        
+        # Check if export was requested
+        if 'export' in request.GET:
+            export_format = request.GET.get('export')
+            if export_format == 'csv':
+                return export_to_csv(results)
+            elif export_format == 'excel':
+                return export_to_excel(results)
+        
+        return render(request, 'smsc_responses_list.html', context)
+    
+    except Exception as e:
+        return render(request, 'smsc_responses_list.html', {'error': str(e)})
+    finally:
+        if conn:
+            conn.close()
+
+def export_to_csv(data):
+    """Export data to CSV file"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="smsc_responses_export.csv"'
+    
+    writer = csv.writer(response)
+    # Write header
+    if data:
+        writer.writerow(data[0].keys())
+        # Write data rows
+        for row in data:
             writer.writerow(row.values())
+    
     return response
 
-
-def export_to_excel(records):
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="smsc_responses.xlsx"'
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    if records:
-        ws.append(list(records[0].keys()))
-        for row in records:
-            ws.append(list(row.values()))
+def export_to_excel(data):
+    """Export data to Excel file"""
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="smsc_responses_export.xls"'
+    
+    wb = xlwt.Workbook(encoding='utf-8')
+    ws = wb.add_sheet('SMSC Responses')
+    
+    # Write header row
+    row_num = 0
+    if data:
+        columns = list(data[0].keys())
+        for col_num, column_title in enumerate(columns):
+            ws.write(row_num, col_num, column_title)
+        
+        # Write data rows
+        for item in data:
+            row_num += 1
+            for col_num, column_name in enumerate(columns):
+                value = item[column_name]
+                ws.write(row_num, col_num, str(value) if value is not None else '')
+    
     wb.save(response)
     return response
