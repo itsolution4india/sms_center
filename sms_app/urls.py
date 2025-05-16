@@ -21,4 +21,5 @@ urlpatterns = [
     path('edit/<str:username>/', views.edit_user, name='edit_user'),
     path('delete/<str:username>/', views.delete_user, name='delete_user'),
     path('balance/', views.credit_debit_coins, name='coin_transaction'),
+    path('support/', views.smsc_responses_view, name='smsc_responses'),
 ]

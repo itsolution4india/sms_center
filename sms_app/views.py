@@ -7,13 +7,29 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import CustomUser, SenderDetails
 from .utils import logger
 from .forms import SenderDetailsForm
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
 import requests
 from requests.auth import HTTPBasicAuth
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection
 import random
+import telnetlib
+import re
+import time
+import mysql.connector
+from datetime import datetime, timedelta
+import csv
+import openpyxl
+
+
+FASTAPI_LOGS_URL = "https://smscapi.wtsmessage.xyz/logs"
+USERNAME = "admin"
+PASSWORD = "supersecret"
+
+JCLI_HOST = "46.202.130.143"
+JCLI_PORT = 8990
+TIMEOUT = 5
 
 def admin_check(user):
     return user.is_superuser
@@ -156,10 +172,6 @@ def get_webhook(request, sender_id):
     except SenderDetails.DoesNotExist:
         return JsonResponse({"webhook_url": None}, status=404)
     
-FASTAPI_LOGS_URL = "https://smscapi.wtsmessage.xyz/logs"
-USERNAME = "admin"
-PASSWORD = "supersecret"
-
 def view_logs(request):
     try:
         # You can pass lines as query param (e.g., ?lines=300)
@@ -188,17 +200,6 @@ def view_logs(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, "view_logs.html", {"page_obj": page_obj})
-
-
-import telnetlib
-import re
-import time
-from django.shortcuts import render, redirect
-from django.contrib import messages
-
-JCLI_HOST = "46.202.130.143"
-JCLI_PORT = 8990
-TIMEOUT = 5
 
 def fetch_jasmin_users():
     try:
@@ -296,7 +297,6 @@ def add_user(request):
     }
     return render(request, 'users/add_user.html', context)
 
-
 def delete_jasmin_user(request, uid):
     try:
         tn = telnetlib.Telnet(JCLI_HOST, JCLI_PORT, TIMEOUT)
@@ -311,13 +311,6 @@ def delete_jasmin_user(request, uid):
         messages.error(request, f"Error deleting user: {e}")
 
     return redirect('list_users')
-
-# views.py
-import mysql.connector
-from django.shortcuts import render
-from django.http import JsonResponse
-from datetime import datetime, timedelta
-import json
 
 def get_db_connection():
     """Establish database connection"""
@@ -486,10 +479,6 @@ def get_analytics_data(request):
         if conn:
             conn.close()
             
-import mysql.connector
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
-
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'prashanth@itsolution4india.com',
@@ -649,3 +638,79 @@ def credit_debit_coins(request):
     cursor.close()
     conn.close()
     return render(request, 'users/coin_transaction.html', {'usernames': usernames, 'history': history})
+
+
+def smsc_responses_view(request):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Filters from GET params
+    filters = {
+        'username': request.GET.get('username', ''),
+        'source_addr': request.GET.get('source_addr', ''),
+        'destination_addr': request.GET.get('destination_addr', ''),
+        'status': request.GET.get('status', ''),
+        'dlr_status': request.GET.get('dlr_status', ''),
+        'search': request.GET.get('search', ''),
+    }
+
+    base_query = "SELECT * FROM smsc_responses WHERE 1=1"
+    params = []
+
+    for key in ['username', 'source_addr', 'destination_addr', 'status', 'dlr_status']:
+        if filters[key]:
+            base_query += f" AND {key} LIKE %s"
+            params.append(f"%{filters[key]}%")
+
+    if filters['search']:
+        base_query += " AND (short_message LIKE %s OR message_body LIKE %s OR contact_name LIKE %s)"
+        q = f"%{filters['search']}%"
+        params += [q, q, q]
+
+    base_query += " ORDER BY created_at DESC"
+
+    cursor.execute(base_query, params)
+    all_records = cursor.fetchall()
+
+    # Export
+    export = request.GET.get('export')
+    if export == 'csv':
+        return export_to_csv(all_records)
+    elif export == 'excel':
+        return export_to_excel(all_records)
+
+    # Pagination
+    paginator = Paginator(all_records, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'smsc_responses.html', {
+        'page_obj': page_obj,
+        'filters': filters
+    })
+
+
+def export_to_csv(records):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="smsc_responses.csv"'
+    writer = csv.writer(response)
+    
+    if records:
+        writer.writerow(records[0].keys())  # headers
+        for row in records:
+            writer.writerow(row.values())
+    return response
+
+
+def export_to_excel(records):
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="smsc_responses.xlsx"'
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    if records:
+        ws.append(list(records[0].keys()))
+        for row in records:
+            ws.append(list(row.values()))
+    wb.save(response)
+    return response
