@@ -23,7 +23,7 @@ import csv
 import openpyxl
 
 
-FASTAPI_LOGS_URL = "https://smscapi.wtsmessage.xyz/logs"
+FASTAPI_LOGS_URL = "https://smppapi.wtsmessage.xyz/logs"
 USERNAME = "admin"
 PASSWORD = "supersecret"
 

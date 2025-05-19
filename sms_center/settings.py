@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-o$w8-a(2ihbqhbs$0&$!754fh)7kl8gmq08mztif$qd@lns7x3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['smsc.wtsmessage.xyz', 'www.smsc.wtsmessage.xyz', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['smsc.wtsmessage.xyz', 'www.smsc.wtsmessage.xyz', 'smpp.wtsmessage.xyz', 'www.smpp.wtsmessage.xyz', 'localhost', '127.0.0.1']
 
 
 # Application definition
