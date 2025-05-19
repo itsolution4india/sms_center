@@ -27,7 +27,7 @@ FASTAPI_LOGS_URL = "https://smppapi.wtsmessage.xyz/logs"
 USERNAME = "admin"
 PASSWORD = "supersecret"
 
-JCLI_HOST = "46.202.130.143"
+JCLI_HOST = "69.62.85.3"
 JCLI_PORT = 8990
 TIMEOUT = 5
 
@@ -263,7 +263,7 @@ def add_user(request):
         password = request.POST.get("password")
         gid = request.POST.get("gid")
 
-        tn = telnetlib.Telnet("46.202.130.143", 8990, 5)
+        tn = telnetlib.Telnet("69.62.85.3", 8990, 5)
         tn.read_until(b"jcli : ", timeout=5)
         tn.write(b"user -a\n")
         time.sleep(1)
@@ -320,7 +320,7 @@ def get_db_connection():
             port=3306,
             user='prashanth@itsolution4india.com',
             password='Solution@97',
-            database='smsc_table'
+            database='smsc_db'
         )
         return conn
     except Exception as e:
@@ -483,7 +483,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'user': 'prashanth@itsolution4india.com',
     'password': 'Solution@97',
-    'database': 'smsc_table'
+    'database': 'smsc_db'
 }
 
 def get_db_connection():
