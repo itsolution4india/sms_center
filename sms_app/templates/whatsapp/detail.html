@@ -111,7 +111,7 @@
 <script>
 function confirmDelete(numberId, phoneNumber) {
     document.getElementById('deletePhoneNumber').textContent = phoneNumber;
-    document.getElementById('deleteForm').action = '/delete/' + numberId + '/';
+    document.getElementById('deleteForm').action = '{% url "whatsapp_delete" 0 %}'.replace('0', numberId);
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 </script>

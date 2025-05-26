@@ -11,7 +11,7 @@ from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
 import requests
 from requests.auth import HTTPBasicAuth
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_http_methods
 from django.db import connection
 import random
@@ -1056,37 +1056,111 @@ def whatsapp_edit(request, number_id):
         return redirect('whatsapp_list')
 
 @require_http_methods(["POST"])
+@csrf_protect
 def whatsapp_delete(request, number_id):
-    """Delete WhatsApp number"""
+    """Delete WhatsApp number with better error handling"""
+    
+    # Validate number_id
+    if not number_id or not str(number_id).isdigit():
+        messages.error(request, "Invalid number ID provided")
+        return redirect('whatsapp_list')
+    
     conn = get_db_connection()
     if not conn:
         messages.error(request, "Database connection failed")
         return redirect('whatsapp_list')
     
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         
-        # Check if record exists
-        cursor.execute("SELECT id FROM whatsapp_numbers WHERE id = %s", (number_id,))
-        if not cursor.fetchone():
-            messages.error(request, "WhatsApp number not found")
+        # First, check if record exists and get details
+        cursor.execute("SELECT id, phone_number FROM whatsapp_numbers WHERE id = %s", (number_id,))
+        record = cursor.fetchone()
+        
+        if not record:
+            messages.error(request, f"WhatsApp number with ID {number_id} not found")
             cursor.close()
             conn.close()
             return redirect('whatsapp_list')
         
-        # Delete record
+        # Delete the record
         cursor.execute("DELETE FROM whatsapp_numbers WHERE id = %s", (number_id,))
-        conn.commit()
+        
+        if cursor.rowcount > 0:
+            conn.commit()
+            messages.success(request, f"WhatsApp number {record['phone_number']} deleted successfully")
+            logger.info(f"WhatsApp number {record['phone_number']} (ID: {number_id}) deleted successfully")
+        else:
+            messages.error(request, "Failed to delete WhatsApp number")
+            logger.error(f"Failed to delete WhatsApp number with ID: {number_id}")
+        
         cursor.close()
         conn.close()
         
-        messages.success(request, "WhatsApp number deleted successfully")
-        return redirect('whatsapp_list')
-        
     except Exception as e:
-        logger.error(f"Error deleting WhatsApp number: {e}")
-        messages.error(request, "Error deleting WhatsApp number")
-        return redirect('whatsapp_list')
+        logger.error(f"Database error while deleting WhatsApp number: {e}")
+        messages.error(request, "Database error occurred while deleting the record")
+        if conn:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Unexpected error while deleting WhatsApp number: {e}")
+        messages.error(request, "An unexpected error occurred")
+        if conn:
+            conn.close()
+    
+    return redirect('whatsapp_list')
+
+# Alternative AJAX delete view if you prefer
+@require_http_methods(["POST"])
+@csrf_protect
+def whatsapp_delete_ajax(request, number_id):
+    """AJAX version of delete function"""
+    
+    if not number_id or not str(number_id).isdigit():
+        return JsonResponse({'success': False, 'message': 'Invalid number ID'})
+    
+    conn = get_db_connection()
+    if not conn:
+        return JsonResponse({'success': False, 'message': 'Database connection failed'})
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Check if record exists
+        cursor.execute("SELECT id, phone_number FROM whatsapp_numbers WHERE id = %s", (number_id,))
+        record = cursor.fetchone()
+        
+        if not record:
+            cursor.close()
+            conn.close()
+            return JsonResponse({'success': False, 'message': 'Record not found'})
+        
+        # Delete the record
+        cursor.execute("DELETE FROM whatsapp_numbers WHERE id = %s", (number_id,))
+        
+        if cursor.rowcount > 0:
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return JsonResponse({
+                'success': True, 
+                'message': f"WhatsApp number {record['phone_number']} deleted successfully"
+            })
+        else:
+            cursor.close()
+            conn.close()
+            return JsonResponse({'success': False, 'message': 'Failed to delete record'})
+            
+    except Exception as e:
+        logger.error(f"Database error in AJAX delete: {e}")
+        if conn:
+            conn.close()
+        return JsonResponse({'success': False, 'message': 'Database error occurred'})
+    except Exception as e:
+        logger.error(f"Unexpected error in AJAX delete: {e}")
+        if conn:
+            conn.close()
+        return JsonResponse({'success': False, 'message': 'An unexpected error occurred'})
 
 def whatsapp_detail(request, number_id):
     """View WhatsApp number details"""

@@ -23,8 +23,8 @@ urlpatterns = [
     path('balance/', views.credit_debit_coins, name='coin_transaction'),
     path('support/', views.smsc_responses_list, name='smsc_responses_list'),
     path('phonenumbers/', views.whatsapp_list, name='whatsapp_list'),
-    path('add/', views.whatsapp_add, name='whatsapp_add'),
-    path('edit/<int:number_id>/', views.whatsapp_edit, name='whatsapp_edit'),
-    path('delete/<int:number_id>/', views.whatsapp_delete, name='whatsapp_delete'),
-    path('detail/<int:number_id>/', views.whatsapp_detail, name='whatsapp_detail'),
+    path('phonenumbers/add/', views.whatsapp_add, name='whatsapp_add'),
+    path('phonenumbers/edit/<int:number_id>/', views.whatsapp_edit, name='whatsapp_edit'),
+    path('phonenumbers/delete/<int:number_id>/', views.whatsapp_delete, name='whatsapp_delete'),
+    path('phonenumbers/detail/<int:number_id>/', views.whatsapp_detail, name='whatsapp_detail'),
 ]
