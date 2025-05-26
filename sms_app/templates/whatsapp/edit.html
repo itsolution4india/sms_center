@@ -1,0 +1,86 @@
+{% extends 'whatsapp/base.html' %}
+
+{% block title %}Edit WhatsApp Number{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Edit WhatsApp Number</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone_id" class="form-label">Phone ID *</label>
+                                <input type="text" class="form-control" id="phone_id" name="phone_id" 
+                                       value="{{ number.phone_id }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="waba_id" class="form-label">WABA ID *</label>
+                                <input type="text" class="form-control" id="waba_id" name="waba_id" 
+                                       value="{{ number.waba_id }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="token" class="form-label">Token *</label>
+                        <textarea class="form-control" id="token" name="token" rows="3" required>{{ number.token }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="template_name" class="form-label">Template Name *</label>
+                                <input type="text" class="form-control" id="template_name" name="template_name" 
+                                       value="{{ number.template_name }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone_number" class="form-label">Phone Number *</label>
+                                <input type="text" class="form-control" id="phone_number" name="phone_number" 
+                                       value="{{ number.phone_number }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username *</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       value="{{ number.username }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="number_status" class="form-label">Status</label>
+                                <select class="form-select" id="number_status" name="number_status">
+                                    <option value="inactive" {% if number.number_status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                    <option value="active" {% if number.number_status == 'active' %}selected{% endif %}>Active</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'whatsapp_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to List
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Update Number
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

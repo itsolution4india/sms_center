@@ -1,0 +1,111 @@
+{% extends 'whatsapp/base.html' %}
+
+{% block title %}WhatsApp Numbers List{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fab fa-whatsapp text-success me-2"></i>WhatsApp Numbers</h2>
+    <a href="{% url 'whatsapp_add' %}" class="btn btn-success">
+        <i class="fas fa-plus me-1"></i>Add New Number
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if numbers %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-success">
+                        <tr>
+                            <th>ID</th>
+                            <th>Phone Number</th>
+                            <th>Username</th>
+                            <th>Template Name</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for number in numbers %}
+                        <tr>
+                            <td>{{ number.id }}</td>
+                            <td>
+                                <strong>{{ number.phone_number }}</strong>
+                                <br><small class="text-muted">ID: {{ number.phone_id }}</small>
+                            </td>
+                            <td>{{ number.username }}</td>
+                            <td>{{ number.template_name }}</td>
+                            <td>
+                                {% if number.number_status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ number.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'whatsapp_detail' number.id %}" class="btn btn-outline-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'whatsapp_edit' number.id %}" class="btn btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" title="Delete" 
+                                            onclick="confirmDelete({{ number.id }}, '{{ number.phone_number }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fab fa-whatsapp fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No WhatsApp numbers found</h4>
+                <p class="text-muted">Start by adding your first WhatsApp number</p>
+                <a href="{% url 'whatsapp_add' %}" class="btn btn-success">
+                    <i class="fas fa-plus me-1"></i>Add First Number
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the WhatsApp number <strong id="deletePhoneNumber"></strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(numberId, phoneNumber) {
+    document.getElementById('deletePhoneNumber').textContent = phoneNumber;
+    document.getElementById('deleteForm').action = '/delete/' + numberId + '/';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

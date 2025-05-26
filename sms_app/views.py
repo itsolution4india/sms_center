@@ -12,6 +12,7 @@ from django.core.paginator import Paginator
 import requests
 from requests.auth import HTTPBasicAuth
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from django.db import connection
 import random
 import telnetlib
@@ -919,3 +920,195 @@ def export_to_excel(data):
     
     wb.save(response)
     return response
+
+
+def whatsapp_list(request):
+    """Display list of all WhatsApp numbers"""
+    conn = get_db_connection()
+    if not conn:
+        messages.error(request, "Database connection failed")
+        return render(request, 'whatsapp/list.html', {'numbers': []})
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT id, phone_id, waba_id, token, template_name, 
+                   phone_number, number_status, username, created_at
+            FROM whatsapp_numbers 
+            ORDER BY created_at DESC
+        """)
+        numbers = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return render(request, 'whatsapp/list.html', {'numbers': numbers})
+        
+    except Exception as e:
+        logger.error(f"Error fetching WhatsApp numbers: {e}")
+        messages.error(request, "Error fetching data from database")
+        return render(request, 'whatsapp/list.html', {'numbers': []})
+
+def whatsapp_add(request):
+    """Add new WhatsApp number"""
+    if request.method == 'POST':
+        phone_id = request.POST.get('phone_id', '').strip()
+        waba_id = request.POST.get('waba_id', '').strip()
+        token = request.POST.get('token', '').strip()
+        template_name = request.POST.get('template_name', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        number_status = request.POST.get('number_status', 'inactive')
+        username = request.POST.get('username', '').strip()
+        
+        # Validation
+        if not all([phone_id, waba_id, token, template_name, phone_number, username]):
+            messages.error(request, "All fields are required")
+            return render(request, 'whatsapp/add.html')
+        
+        conn = get_db_connection()
+        if not conn:
+            messages.error(request, "Database connection failed")
+            return render(request, 'whatsapp/add.html')
+        
+        try:
+            cursor = conn.cursor()
+            query = """
+                INSERT INTO whatsapp_numbers 
+                (phone_id, waba_id, token, template_name, phone_number, number_status, username)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            values = (phone_id, waba_id, token, template_name, phone_number, number_status, username)
+            cursor.execute(query, values)
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            messages.success(request, "WhatsApp number added successfully")
+            return redirect('whatsapp_list')
+            
+        except Exception as e:
+            logger.error(f"Error adding WhatsApp number: {e}")
+            messages.error(request, "Error adding WhatsApp number to database")
+            return render(request, 'whatsapp/add.html')
+    
+    return render(request, 'whatsapp/add.html')
+
+def whatsapp_edit(request, number_id):
+    """Edit existing WhatsApp number"""
+    conn = get_db_connection()
+    if not conn:
+        messages.error(request, "Database connection failed")
+        return redirect('whatsapp_list')
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        if request.method == 'POST':
+            phone_id = request.POST.get('phone_id', '').strip()
+            waba_id = request.POST.get('waba_id', '').strip()
+            token = request.POST.get('token', '').strip()
+            template_name = request.POST.get('template_name', '').strip()
+            phone_number = request.POST.get('phone_number', '').strip()
+            number_status = request.POST.get('number_status', 'inactive')
+            username = request.POST.get('username', '').strip()
+            
+            # Validation
+            if not all([phone_id, waba_id, token, template_name, phone_number, username]):
+                messages.error(request, "All fields are required")
+                # Fetch current data for re-rendering form
+                cursor.execute("SELECT * FROM whatsapp_numbers WHERE id = %s", (number_id,))
+                number = cursor.fetchone()
+                cursor.close()
+                conn.close()
+                return render(request, 'whatsapp/edit.html', {'number': number})
+            
+            # Update record
+            update_query = """
+                UPDATE whatsapp_numbers 
+                SET phone_id = %s, waba_id = %s, token = %s, template_name = %s,
+                    phone_number = %s, number_status = %s, username = %s
+                WHERE id = %s
+            """
+            values = (phone_id, waba_id, token, template_name, phone_number, number_status, username, number_id)
+            cursor.execute(update_query, values)
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            messages.success(request, "WhatsApp number updated successfully")
+            return redirect('whatsapp_list')
+        
+        else:
+            # GET request - fetch current data
+            cursor.execute("SELECT * FROM whatsapp_numbers WHERE id = %s", (number_id,))
+            number = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            if not number:
+                messages.error(request, "WhatsApp number not found")
+                return redirect('whatsapp_list')
+            
+            return render(request, 'whatsapp/edit.html', {'number': number})
+            
+    except Exception as e:
+        logger.error(f"Error editing WhatsApp number: {e}")
+        messages.error(request, "Error updating WhatsApp number")
+        return redirect('whatsapp_list')
+
+@require_http_methods(["POST"])
+def whatsapp_delete(request, number_id):
+    """Delete WhatsApp number"""
+    conn = get_db_connection()
+    if not conn:
+        messages.error(request, "Database connection failed")
+        return redirect('whatsapp_list')
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check if record exists
+        cursor.execute("SELECT id FROM whatsapp_numbers WHERE id = %s", (number_id,))
+        if not cursor.fetchone():
+            messages.error(request, "WhatsApp number not found")
+            cursor.close()
+            conn.close()
+            return redirect('whatsapp_list')
+        
+        # Delete record
+        cursor.execute("DELETE FROM whatsapp_numbers WHERE id = %s", (number_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        messages.success(request, "WhatsApp number deleted successfully")
+        return redirect('whatsapp_list')
+        
+    except Exception as e:
+        logger.error(f"Error deleting WhatsApp number: {e}")
+        messages.error(request, "Error deleting WhatsApp number")
+        return redirect('whatsapp_list')
+
+def whatsapp_detail(request, number_id):
+    """View WhatsApp number details"""
+    conn = get_db_connection()
+    if not conn:
+        messages.error(request, "Database connection failed")
+        return redirect('whatsapp_list')
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM whatsapp_numbers WHERE id = %s", (number_id,))
+        number = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not number:
+            messages.error(request, "WhatsApp number not found")
+            return redirect('whatsapp_list')
+        
+        return render(request, 'whatsapp/detail.html', {'number': number})
+        
+    except Exception as e:
+        logger.error(f"Error fetching WhatsApp number details: {e}")
+        messages.error(request, "Error fetching WhatsApp number details")
+        return redirect('whatsapp_list')
