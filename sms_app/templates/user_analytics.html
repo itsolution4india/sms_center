@@ -3,102 +3,96 @@
 {% block title %}Analytics for {{ username }}{% endblock %}
 
 {% block content %}
-    <div class="container mt-4">
-        <h3 class="mb-4">SMS Analytics for <span id="username">{{ username }}</span></h3>
-        
-        <!-- Date Filter -->
-        <div class="row">
-            <div class="col">
-            <div class="col mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <label for="dateFilter" class="form-label">Select Date:</label>
-                        <input type="date" id="dateFilter" class="form-control" value="{{ default_date }}">
-                        <button id="applyFilter" class="btn btn-primary mt-2">Apply</button>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Summary</h5>
-                        <p>Total Messages: <strong id="totalMessages">0</strong></p>
-                        <p>Date: <strong id="displayDate">{{ default_date }}</strong></p>
-                    </div>
+<div class="container mt-4">
+    <h3 class="mb-4">SMS Analytics for <span id="username">{{ username }}</span></h3>
+
+    <!-- Filters & Summary -->
+    <div class="row mb-4">
+        <div class="col-12 col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <label for="dateFilter" class="form-label">Select Date:</label>
+                    <input type="date" id="dateFilter" class="form-control" value="{{ default_date }}">
+                    <button id="applyFilter" class="btn btn-primary mt-2">Apply</button>
                 </div>
             </div>
         </div>
-        
-        <!-- Charts -->
-        <div class="row mb-8">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Message Status Distribution</h5>
-                        <canvas id="statusChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">DLR Status Distribution</h5>
-                        <canvas id="dlrStatusChart"></canvas>
-                    </div>
+        <div class="col-12 col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Summary</h5>
+                    <p>Total Messages: <strong id="totalMessages">0</strong></p>
+                    <p>Date: <strong id="displayDate">{{ default_date }}</strong></p>
                 </div>
             </div>
         </div>
-        </div>
-        
-        <div class="col">
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Hourly Message Volume by DLR Status</h5>
-                        <canvas id="hourlyDlrChart"></canvas>
-                    </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row mb-4">
+        <div class="col-12 col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Message Status Distribution</h5>
+                    <canvas id="statusChart"></canvas>
                 </div>
             </div>
         </div>
-        
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Hourly Message Volume (Total)</h5>
-                        <canvas id="hourlyChart"></canvas>
-                    </div>
+        <div class="col-12 col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">DLR Status Distribution</h5>
+                    <canvas id="dlrStatusChart"></canvas>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row mb-4">
+        <div class="col-12 col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Hourly Message Volume by DLR Status</h5>
+                    <canvas id="hourlyDlrChart"></canvas>
+                </div>
+            </div>
         </div>
-        
-        <!-- Error Table -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Top Errors</h5>
-                        <div class="table-responsive">
-                            <table class="table table-striped" id="errorTable">
-                                <thead>
-                                    <tr>
-                                        <th>Error Code</th>
-                                        <th>Error Message</th>
-                                        <th>Count</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Will be populated by JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
+        <div class="col-12 col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Hourly Message Volume (Total)</h5>
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Table -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Top Errors</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="errorTable">
+                            <thead>
+                                <tr>
+                                    <th>Error Code</th>
+                                    <th>Error Message</th>
+                                    <th>Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <script>
         // Global chart variables
