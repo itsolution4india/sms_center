@@ -239,12 +239,28 @@
                     <i class="menu-arrow"></i>
                   </a>
               </li> -->
-              <li class="nav-item">
+              <!-- <li class="nav-item">
                   <a href="/report-analytics" style="display: flex !important;" class="nav-link pe-2 ps-2">
                     <i class="mdi mdi-chart-bar menu-icon m-0 me-2"></i>
                     <span class="menu-title mb-1">Report Analytics</span>
                     <i class="menu-arrow"></i>
                   </a>
+              </li> -->
+              <li class="nav-item">
+                  <a href="#" style="display: flex !important;" class="nav-link pe-2 ps-2">
+                    <i class="mdi mdi-account menu-icon m-o me-2 mb-0"></i>
+                    <span class="menu-title mb-1">Report Analytics</span>
+                    <i class="menu-arrow"></i>
+                  </a>
+                  <div class="submenu m-0">
+                      <ul>
+                        {% for user in users %}
+                            <li class="nav-item"><a class="nav-link" href="{% url 'user_analytics' username=user.username %}">{{ user.username }}</a></li>
+                        {% empty %}
+                            <li class="nav-item"><a class="nav-link" href="#">No users found</a></li>
+                        {% endfor %}
+                      </ul>
+                  </div>
               </li>
               <li class="nav-item">
                 <a href="/support" style="display: flex !important;" class="nav-link pe-2 ps-2">
