@@ -2,6 +2,14 @@
 
 {% block title %}Analytics for {{ username }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .card-body {
+        border: 1px solid #000;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <h3 class="mb-4">SMS Analytics for <span id="username">{{ username }}</span></h3>
@@ -9,7 +17,7 @@
     <!-- Filters & Summary -->
     <div class="row mb-4">
         <div class="col-12 col-md-6 mb-3">
-            <div class="card">
+            <div class="card p-4">
                 <div class="card-body">
                     <label for="dateFilter" class="form-label">Select Date:</label>
                     <input type="date" id="dateFilter" class="form-control" value="{{ default_date }}">
@@ -30,7 +38,7 @@
 
     <!-- Charts Row 1 -->
     <div class="row mb-4">
-        <div class="col-12 col-md-6 col-lg-4 mb-3">
+        <div class="col-12 col-md-6 col-lg-6 mb-3">
             <div class="card h-100">
                 <div class="card-body">
                     <h5 class="card-title">Message Status Distribution</h5>
@@ -38,7 +46,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-6 col-lg-4 mb-3">
+        <div class="col-12 col-md-6 col-lg-6 mb-3">
             <div class="card h-100">
                 <div class="card-body">
                     <h5 class="card-title">DLR Status Distribution</h5>
