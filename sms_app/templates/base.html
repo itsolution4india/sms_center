@@ -14,6 +14,8 @@
     <!-- End plugin css for this page -->
     <!-- inject:css -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- endinject -->
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" />
     {% block extra_css %}{% endblock %}
@@ -304,7 +306,7 @@
     <!-- endinject -->
     <!-- plugin js for this page -->
     <!-- End plugin js for this page -->
-    <script src="{% static 'vendors/chart.js/Chart.min.js' %}"></script>
+    <!-- <script src="{% static 'vendors/chart.js/Chart.min.js' %}"></script> -->
     <script src="{% static 'vendors/progressbar.js/progressbar.min.js' %}"></script>
 		<script src="{% static 'vendors/chartjs-plugin-datalabels/chartjs-plugin-datalabels.js' %}"></script>
 		<script src="{% static 'vendors/justgage/raphael-2.1.4.min.js' %}"></script>
